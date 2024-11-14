@@ -1,5 +1,9 @@
 # Substance Designer Pixel Shader
 
+## Install Shader
+`3D View`->`Materials`->`Default`->`Load Definition ..` and select the corresponding `glslfx` file and select your new
+material in the material menu
+
 This is a pixelated shader for Substance Designer 3D View.
 Texure Filter are set to `nearest` except the normal map which is set `linear`
 
