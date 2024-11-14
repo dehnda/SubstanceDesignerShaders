@@ -1,0 +1,610 @@
+1. File Format
+===============================================================================
+GLSLFX file format is a XML file.
+Comments are supported:
+<!-- This is a comment -->
+
+2. Header and Root node
+===============================================================================
+The Xml root node Element is named 'glslfx'.
+Example:
+	<?xml version="1.0" encoding="UTF-8"?>
+	<glslfx version="1.1.0" author="Adobe">
+		<!-- BODY -->
+		<!-- ... -->
+	</glslfx>
+
+
+3. Body
+===============================================================================
+3.1. Techniques
+---------------
+XML Element that describes a technique.
+A technique is a variation of the current FX.
+A GLSLFX can contains multiples techniques but at least one technique has to be defined.
+The geometry will be rendered with one of the techniques defined by the application.
+
+XML Element Definition:
+	- Name: 'technique'
+	- Attributes:
+		- 'name': The value is any string used to name the technique
+
+Example:
+	<!-- TECHNIQUES -->
+	<technique name="LowResShader">
+		<!-- ... -->
+	</technique>
+	<!-- ... -->
+	<technique name="HighResShader">
+		<!-- ... -->
+	</technique>
+ 
+The XML element can have multiples children.
+The elements defined in a techniques override the elements defined globally.
+For example, it is used to override some uniforms values and obtain FX variation for this technique.
+
+3.1.1 Render passes
+-------------------
+XML Element that describes a render pass.
+A render pass describes the rendering of the geometry.
+A technique can contain multiple render passes that will be executed sequentially.
+A technique containing no render pass is equivalent to a technique containing an 'onscreen' render pass.
+The elements defined in a render pass override the elements defined in the parent technique.
+
+XML Element Definition:
+	- Name: 'pass'
+	- Attributes:
+		- 'output':
+			- 'offscreen': The rendering will be done into user defined render targets
+			- 'onscreen': The rendering will be done into the default render target
+
+Example:
+	<!-- TECHNIQUES -->
+	<technique name="MultipassTechnique">
+		<!-- RENDER PASSES -->
+		<pass output="offscreen">
+			<!-- ... -->
+		</pass>
+		<!-- ... -->
+		<pass output="onscreen">
+			<!-- ... -->
+		</pass>
+	</technique>
+
+3.1.1.1 Shaders
+---------------
+Set the glsl shader files for each type.
+
+XML Element Definition:
+	- Name: 'shader'
+	- Attributes:
+		- 'type': The glsl shader type.
+
+		|---------------------------------------------------|
+		| 'type' value	| Description 						|
+		|---------------------------------------------------|
+		| vertex		| Vertex shader						|
+		| geometry		| Geometry shader					|
+		| tess_control	| Tessellation Control shader		|
+		| tess_eval		| Tessellation Evaluation shader	|
+		| fragment		| Fragment shader					|
+		|---------------------------------------------------|
+
+	- 'filename': The path of the glsl shader file. Can be absolute or relative to the glslfx file
+	- 'primitiveType': The method to render the primitive
+
+		|-------------------------------------------------------------------|
+		| 'primitiveType' value	| Description 								|
+		|-------------------------------------------------------------------|
+		| position				| Render as points							|
+		| lineloop				| Render as line loop 						|
+		| patch[1..N]			| Render as patches with [1..N] vertices 	|
+		|-------------------------------------------------------------------|
+
+Example:
+	<!-- TECHNIQUES -->
+	<technique name="Tessellation">
+		<!-- RENDER PASSES -->
+		<pass output="onscreen">
+			<!-- SHADERS -->
+			<shader type="vertex" filename="tessellation_parallax/tessellation/vs.glsl" primitiveType="patch3"/>
+			<shader type="tess_control" filename="tessellation_parallax/tessellation/tcs.glsl"/>
+			<shader type="tess_eval" filename="tessellation_parallax/tessellation/tes.glsl"/>
+			<shader type="fragment" filename="tessellation_parallax/fs.glsl"/>
+		</pass>
+	</technique>
+
+3.1.1.2 Properties
+----------------
+Allow to set up some part of the OpenGL state.
+
+XML Element Definition:
+	- Name: 'property'
+	- Attributes:
+		- 'name': The name of the property to set. The name are based on the OpenGL function or glEnum name:
+			- enum:
+				- without the 'GL_' prefix, in lower case.
+				- Ex:
+					glEnable(GL_BLEND_ENABLE) => "<property name="blend_enabled" value="true"/>"
+					glDisable(GL_CULL_FACE) => "<property name="cull_face_enabled" value="false"/>"
+			- functions:
+				- without the 'gl' prefix, in lower case and with all words separated with '_' character.
+				- Ex:
+					glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) => "<property name="blend_func" value="src_alpha,one_minus_src_alpha"/>"
+					'value': The value of the property
+			- Allowed properties are:
+				|-------------------|---------------------------|-------------------------------------------------------|
+				| 'name' values		| 'value' values			| Description 											|
+				|-------------------|---------------------------|-------------------------------------------------------|
+				| blend_enabled		| boolean 					| Enable/disable the blending mode 						|
+				| 					| true 						| 														|
+				| 					| false 					| 														|
+				|-------------------|---------------------------|-------------------------------------------------------|
+				| blend_func		| string, string			| Set the sources and destination blending functions	|
+				| 					| zero						| for OpenGL enum GL_ZERO								|
+				| 					| one						| for OpenGL enum GL_ONE								|
+				| 					| src_color					| for OpenGL enum GL_SRC_COLOR							|
+				| 					| one_minus_src_color 		| for OpenGL enum GL_ONE_MINUS_SRC_COLOR				|
+				| 					| dst_color					| for OpenGL enum GL_DST_COLOR							|
+				| 					| one_minus_dst_color		| for OpenGL enum GL_ONE_MINUS_DST_COLOR				|
+				| 					| src_alpha					| for OpenGL enum GL_SRC_ALPHA							|
+				| 					| one_minus_src_alpha 		| for OpenGL enum GL_ONE_MINUS_SRC_ALPHA				|
+				| 					| dst_alpha					| for OpenGL enum GL_DST_ALPHA							|
+				|					| one_minus_dst_alpha		| for OpenGL enum GL_ONE_MINUS_DST_ALPHA				|
+				| 					| constant_color			| for OpenGL enum GL_CONSTANT_COLOR						|
+				| 					| one_minus_constant_color	| for OpenGL enum GL_ONE_MINUS_CONSTANT_COLOR			|
+				| 					| constant_alpha			| for OpenGL enum GL_CONSTANT_ALPHA						|
+				| 					| one_minus_constant_alpha	| for OpenGL enum GL_ONE_MINUS_CONSTANT_ALPHA			|
+				| 					| src_alpha_saturate		| for OpenGL enum GL_SRC_ALPHA_SATURATE					|
+				| 					| src1_color				| for OpenGL enum GL_SRC1_COLOR							|
+				| 					| one_minus_src1_color		| for OpenGL enum GL_ONE_MINUS_SRC1_COLOR				|
+				|					| src1_alpha				| for OpenGL enum GL_SRC1_ALPHA							|
+				| 					| one_minus_src1_alpha		| for OpenGL enum GL_ONE_MINUS_SRC1_ALPHA				|
+				|-------------------|---------------------------|-------------------------------------------------------|
+				| blend_equation	| string					| Set the Blend Equation 								|
+				| 					| func_add					| for OpenGL enum GL_FUNC_ADD							|
+				| 					| func_subtract				| for OpenGL enum GL_FUNC_SUBTRACT						|
+				| 					| func_reverse_subtract		| for OpenGL enum GL_FUNC_REVERSE_SUBTRACT				|
+				| 					| min						| for OpenGL enum GL_MIN								|
+				| 					| max						| for OpenGL enum GL_MAX								|
+				|-------------------|---------------------------|-------------------------------------------------------|
+				| cull_face_enabled	| boolean					| Enable/disable the face culling						|
+				| 					| true						| 														|
+				| 					| false						| 														|
+				|-------------------|---------------------------|-------------------------------------------------------|
+				| cull_face_mode	| string					| Set the face culling mode								|
+				| 					| front						| for OpenGL enum GL_FRONT								|
+				| 					| back						| for OpenGL enum GL_BACK								|
+				| 					| front_and_back			| for OpenGL enum GL_FRONT_AND_BACK						|
+				|-------------------|---------------------------|-------------------------------------------------------|
+				| depth_test_enabled| boolean					| Enable/disable the depth test							|
+				| 					| true						| 														|
+				| 					| false						| 														|
+				|-------------------|---------------------------|-------------------------------------------------------|
+				| depth_func		| string					| Set the depth compare function						|
+				|					| never						| for OpenGL enum GL_NEVER								|
+				|					| less						| for OpenGL enum GL_LESS								|
+				|					| lequal					| for OpenGL enum GL_LEQUAL								|
+				|					| equal						| for OpenGL enum GL_EQUAL								|
+				|					| notequal					| for OpenGL enum GL_NOTEQUAL							|
+				|					| gequal					| for OpenGL enum GL_GEQUAL								|
+				|					| greater					| for OpenGL enum GL_GREATER							|
+				|					| always					| for OpenGL enum GL_ALWAYS								|
+				|-------------------|---------------------------|-------------------------------------------------------|
+    
+Example:
+	<!-- TECHNIQUES -->
+	<technique name="LowResShader">
+		<!-- RENDER PASSES -->
+		<pass output="onscreen">
+			<!-- PROPERTIES -->
+			<property name="blend_enabled" value="true"/>
+			<property name="blend_func" value="src_alpha,one_minus_src_alpha"/>
+			<property name="cull_face_enabled" value="true"/>
+			<property name="cull_face_mode" value="back"/>
+			<property name="depth_func" value="lequal"/>
+		</pass>
+	</technique>
+
+3.1.1.3 Uniforms
+----------------
+Allow to override some uniforms defined globally or in the parent technique.
+This allow to change shader behavior for this technique or render pass.
+See the Uniforms definition chapter for more details about their definition.
+
+Example:
+	<!-- TECHNIQUES -->
+	<technique name="Tesselation">
+		<!-- SHADERS -->
+		<shader type="vertex" filename="tessellation_parallax/tessellation/vs.glsl" primitiveType="patch3"/>
+		<shader type="tess_control" filename="tessellation_parallax/tessellation/tcs.glsl"/>
+		<shader type="tess_eval" filename="tessellation_parallax/tessellation/tes.glsl"/>
+		<shader type="fragment" filename="tessellation_parallax/fs.glsl"/>
+		<!-- UNIFORMS -->
+		<uniform name="parallax_mode" guiName="Parallax Mode" min="0" max="0" />
+		<uniform name="enableTilingInFS" guiName="Tiling Enabled In FS" min="0" max="0" />
+		<uniform name="tessellationFactor" guiName="Tessellation Factor" default="4" min="1" max="64" guiStep="1" guiWidget="slider"/>
+	</technique>
+	<technique name="Parallax">
+		<!-- RENDER PASSES -->
+		<pass output="onscreen">
+			<!-- SHADERS -->
+			<shader type="vertex" filename="tessellation_parallax/parallax/vs.glsl"/>
+			<shader type="fragment" filename="tessellation_parallax/fs.glsl"/>
+			<!-- UNIFORMS -->
+			<uniform name="parallax_mode" guiName="Parallax Mode" min="1" max="1" />
+			<uniform name="enableTilingInFS" guiName="Tiling Enabled In FS" min="1" max="1" />
+		</pass>
+	</technique>
+
+3.1.1.4 Render Targets
+----------------------
+For 'offscreen' render passes, render targets must be defined in the render pass.
+
+XML Element Definition:
+	- Name: 'output'
+	- Attributes:
+		- 'attachment': The OpenGL attachment point, inspired by the OpenGL names:
+			GL_COLOR_ATTACHMENT[0..3] => 'color[0..3]'
+			GL_DEPTH_ATTACHMENT => 'depth'
+		- 'name': the name of the render target.
+			It can be used in a later render pass to bind this render target as a sampler.
+		- 'format': the internal format of the render target.
+			- For color formats, the name is based on OpenGL enum names, without the 'GL_' prefix, in lower case.
+				Three channel formats (RGB) are not supported, use an RGBA format instead.
+				Bit depth per channel supported:
+					- Normalized unsigned integer: 8, 16
+					- Floating point: 16, 32
+				An exception to these rules is the GL_R11F_G11F_B10F format which is supported.
+				Ex:
+					GL_RGBA8 => 'rgba8'
+					GL_RGBA16F => 'rgba16f'
+					GL_SRGB8_ALPHA8 => 'srgb8_alpha8'
+					GL_R11F_G11F_B10F => 'r11f_g11f_b10f'
+					GL_RG16 => "rg16"
+			- For depth formats, all depth-only (no stencil) OpenGL formats are supported:
+				GL_DEPTH_COMPONENT16 => 'depth16'
+				GL_DEPTH_COMPONENT24 => 'depth24'
+				GL_DEPTH_COMPONENT32 => 'depth32'
+				GL_DEPTH_COMPONENT32F => 'depth32f'
+		- 'clear': optional attribute that defines a clear value (Separa multiple value with the ';' character, Ex: clear="1.0;0.0;0.0;1.0")
+			If present, the render target will be cleared to this value at the beginning of the render pass.
+			If missing, the render target will keep its previous content.
+
+Example:
+	<!-- TECHNIQUES -->
+	<technique name="Parallax Occlusion">
+		<!-- RENDER PASSES -->
+		<pass output="offscreen">
+			<!-- ... -->
+			<!-- RENDER TARGETS -->
+			<output attachment="color0" name="sssDiffuse" format="rgba16f"  clear="0.0;0.0;0.0;0.0"/>
+			<output attachment="depth"  name="sssDepth"   format="depth32f" clear="1.0"/>
+		</pass>
+	</technique>
+
+Color render targets are forbidden in an 'onscreen' render pass, but a depth render target can be shared with
+any render pass (but it's likely to break rendering when mixing multiple materials in the scene).
+
+3.1.1.5 Samplers
+----------------
+Allow to override some samplers defined globally, they cannot be defined in a technique.
+This allow to define a sampler usage for this render pass, or to read from a render target of a previous render pass.
+See the Samplers definition chapter for more details about their definition.
+
+Example:
+	<!-- TECHNIQUES -->
+	<technique name="Parallax Occlusion">
+		<!-- RENDER PASSES -->
+		<pass output="offscreen">
+			<!-- ... -->
+			<!-- RENDER TARGETS -->
+			<output attachment="color0" name="sssDiffuse" format="rgba16f"/>
+			<output attachment="depth"  name="sssDepth"   format="depth32f"/>
+		</pass>
+		<pass output="onscreen">
+			<!-- ... -->
+			<!-- SAMPLERS -->
+			<sampler name="baseColorMap"  usage="basecolor,diffuse"/>
+			<sampler name="sssDiffuseMap" outputName="sssDiffuse"/>
+			<sampler name="sssDepthMap"   outputName="sssDepth"  />
+		</pass>
+	</technique>
+
+3.2. Input Vertex Format
+------------------------
+This allow to define the semantic of each attributes define in the vertex shader.
+
+XML Element Definition:
+	- Name: 'vertexformat'
+	- Attributes:
+		- 'name': The name of the attribute as defined in the vertex shader.
+		- 'semantic': The semantic of the attribute.
+
+		|-------------------|-----------------------------------------------|
+		| 'semantic' Value 	| Description 									|
+		|-------------------|-----------------------------------------------|
+		| position 			| Vertex position (float3)						|
+		| normal 			| Vertex normal (float3)						|
+		| texcoord[0..N] 	| Vertex texture coordinate buffer N (float2)	|
+		| tangent[0..N] 	| Vertex tangent buffer N (float4)				|
+		| binormal[0..N] 	| Vertex binormal buffer N (float4)				|
+		|-------------------|-----------------------------------------------|
+
+Example:
+
+	<?xml version="1.0" encoding="UTF-8"?>
+	<glslfx version="1.0.0" author="Adobe">
+		<!-- BODY -->
+		<!-- ... -->
+		<!-- INPUT VERTEX FORMAT -->
+		<vertexformat name="iVS_Position" semantic="position"/>
+		<vertexformat name="iVS_Normal" semantic="normal"/>
+		<vertexformat name="iVS_UV" semantic="texcoord0"/>
+		<vertexformat name="iVS_Tangent" semantic="tangent0"/>
+		<vertexformat name="iVS_Binormal" semantic="binormal0"/>
+	</glslfx>
+
+3.3. Samplers
+-------------
+This allow to define the usage of each samplers.
+It is used by the application to known which texture to set in the specified samplers.
+
+XML Element Definition:
+	- Name: 'sampler'
+	- Attributes:
+		- 'name': The name of the sampler variable in the shader file.
+		- 'usage': The usage of the sampler. Mutually exclusive with 'outputName'
+			It matches the usage specified in the Ouput node of the graph.
+
+		|-------------------|-------------------------------------------------------------------|
+		| 'usage' Value 	| Description 														|
+		|-------------------|-------------------------------------------------------------------|
+		| diffuse 			| Diffuse map 														|
+		| opacity			| Opacity map														|
+		| emissive			| Emissive map														|
+		| ambientocclusion	| Ambient occlusion map												|
+		| ambient			| Ambient map														|
+		| mask				| Mask map															|
+		| detailnormal		| Detail Normal map													|
+		| normal			| Normal map														|
+		| bump				| Bump map															|
+		| height			| Height map														|
+		| displacement		| Displacement map													|
+		| specularlevel		| Specular level map												|
+		| specularcolor		| Specular color map												|
+		| specular			| Specular map														|
+		| glossiness		| Glossiness map													|
+		| roughness			| Roughness map														|
+		| anisotropylevel	| Anisothropy level map												|
+		| anisotropyangle	| Anisothropy angle map												|
+		| transmissive		| Transmissive map													|
+		| reflection		| Reflection map													|
+		| refraction		| Refraction map													|
+		| environment		| Environment map (cube map)										|
+		| panorama			| The Panorama Map (Latitude/Longitude Map)							|
+		| bluenoisemask		| A 256x256 dithering texture										|
+		|-------------------|-------------------------------------------------------------------|
+
+			- Multiple usages are supported.
+				Example:
+					<!-- SAMPLERS -->
+						<sampler name="baseColorMap" usage="basecolor,diffuse"/>
+					<!-- ... -->
+
+		- 'outputName': The name of a previous render pass render target. Mutually exclusive with 'usage'.
+
+		- 'isHidden': Boolean that indicates if the sampler should appear in the GUI
+			Example:
+				<!-- SAMPLERS -->
+					<sampler name="bluenoiseMask" usage="bluenoisemask" ishidden="true"/>
+				<!-- ... -->
+
+		- Wrapping Mode:
+
+		|---------------------------------------------------|-------------------|
+		| Name 												| Value 			|
+		|---------------------------------------------------|-------------------|
+		| texture_wrap_s, texture_wrap_t, texture_wrap_r 	| clamp_to_edge  	|
+		| 													| clamp_to_border 	|
+		| 													| mirrored_repeat 	|
+		| 													| repeat 		 	|
+		|---------------------------------------------------|-------------------|
+
+		- Texture Filter:
+
+		|-------------------------------------------|---------------------------|
+		| Name 										| Value 					|
+		|-------------------------------------------|---------------------------|
+		| texture_min_filter, texture_mag_filter 	| nearest  					|
+		| 											| linear 					|
+		| 											| nearest_mipmap_nearest 	|
+		| 											| linear_mipmap_nearest 	|
+		| 											| nearest_mipmap_linear 	|
+		| 											| linear_mipmap_linear 		|
+		|-------------------------------------------|---------------------------|
+
+
+Example:
+	<?xml version="1.0" encoding="UTF-8"?>
+	<glslfx version="1.0.0" author="Adobe">
+		<!-- BODY -->
+		<!-- ... -->
+		<!-- SAMPLERS -->
+		<sampler name="baseColorMap" usage="basecolor,diffuse"/>
+		<sampler name="heightMap" usage="height"/>
+		<sampler name="normalMap" usage="normal"/>
+		<sampler name="detailNormalMap" usage="detailNormal"/>
+		<sampler name="environmentMap" usage="environment"/>
+		<sampler name="bluenoiseMask" usage="bluenoisemask" ishidden="true"/>
+		<sampler name="sssDiffuseMap" outputName="sssDiffuse"/>
+	</glslfx>
+
+3.4. Uniforms
+-------------
+This allow to add additional information on each shader uniforms.
+
+3.4.1 Matrix
+------------
+Describe which matrix to store in the specified uniform.
+XML Element Definition:
+	- Name: 'uniform'
+	- Attributes:
+		- 'name': The name of the uniform in the shader file.
+		- 'semantic': The semantic of the uniform. (All matrices are float16).
+
+		|---------------------------|---------------------------------------|
+		| 'semantic' value			| Description							|
+		|---------------------------|---------------------------------------|
+		| world 					| World Matrix 							|
+		| worldinversetranspose 	| World Inverse Transpose Matrix 		|
+		| worldviewprojection		| World View Projection Matrix			|
+		| viewprojection			| View Projection Matrix				|
+		| viewprojectioninverse		| View Projection Inverse Matrix		|
+		| viewinverse				| View Inverse Matrix					|
+		| worldview					| World View Matrix						|
+		| modelview					| Model View Matrix						|
+		| modelviewinversetranspose	| Model View Inverse Transpose Matrix	|
+		| projection				| Projection Matrix 					|
+		| projectioninverse			| Projection Inverse Matrix				|
+		|---------------------------|---------------------------------------|
+
+Example:
+	<?xml version="1.0" encoding="UTF-8"?>
+	<glslfx version="1.0.0" author="Adobe">
+		<!-- BODY -->
+		<!-- ... -->
+		<!-- MATRICES -->
+		<uniform name="worldMatrix" semantic="world"/>
+		<uniform name="worldViewProjMatrix" semantic="worldviewprojection"/>
+		<uniform name="worldViewMatrix" semantic="worldview"/>
+		<uniform name="worldInverseTransposeMatrix" semantic="worldinversetranspose"/>
+		<uniform name="viewInverseMatrix" semantic="viewinverse"/>
+		<uniform name="modelViewMatrix" semantic="modelview"/>
+		<uniform name="projectionMatrix" semantic="projection"/>
+	</glslfx>
+
+3.4.2 Scene parameters
+----------------------
+Describe which scene data to store in the specified uniform.
+
+XML Element Definition:
+	- Name: 'uniform'
+	- Attributes:
+		- 'name': The name of the uniform in the shader file.
+		- 'semantic': The semantic of the uniform.
+
+		|-----------------------------------|-------------------------------------------------------------------------------|
+		| 'semantic' value					| Description																	|
+		|-----------------------------------|-------------------------------------------------------------------------------|
+		| ambient 							| Scene Ambient Color (float3, rgbF)			 								|
+		| light[0..N]enabled				| Is Enabled/Disable flag of the scene's Nth light (bool) 						|
+		| light[0..N]position				| Position of the scene's Nth light (float3) 									|
+		| light[0..N]color					| Color of the scene's Nth light (float3)										|
+		| light[0..N]intensity				| Intensity of the scene's Nth light (float)									|
+		| isdirectxnormal 					| Indicate if the parameter controls the normal format (i.e. is 				|
+		|									| the Y component of the normal texture is flipped) (bool) 						|
+		| uvwscale		 					| Scale of the UVW (float3)														|
+		| uvwscaleenabled					| Indicate is the uvwscale has to be taken in account (bool)					|
+		| physicalsize						| The Physical Size (as defined on a Substance Compositing Graph				|
+		| globaltime						| The global time in seconds (float)											|
+		| resolution						| The viewport resolution (float3)												|
+		| mouse								| The Mouse cursor information (float4):										|
+		|			 						| 	[0]: Mouse Pos X 															|
+		|			 						| 	[1]: Mouse Pos Y 															|
+		|			 						| 	[2]: 1.0f if Mouse Button Down else 0.0f									|
+		|			 						| 	[3]: 0.f (Unused)															|
+		| samplespostablesize				| Sample position table size (int)												|
+		| irradianceshcoefs					| Irradiance Spherical Harmonics coefficients (float3[])						|
+		| panoramamipmapheight				| Mipmap height of the panorama map (float)										|
+		| panoramarotation					| Rotation angle of the panorama map (float)									|
+		| panoramaintensity					| Intensity of the panorama map (float)	(power of 2 of the value)				|
+		| computebinormalinfragmentshader	| Indicate if the binormal has to be computed in the Fragment shader (bool)		|
+		| renderuvtile						| Indicate if the shader has to take in account the current UV tile (bool)		|
+		| uvtilecoords						| The current UV tile coordinate (int2)											|
+		| feedback_position					| The uniform of the fragment shader that contains the vertex position to   	|
+		| 									| read from the guiStep	(float3[])												|
+		| feedback_normal					| The uniform of the fragment shader that contains the vertex position to		|
+		| 									| read from the guiStep	(float3[])												|
+		| feedback_texcoord					| The uniform of the fragment shader that contains the vertex position to		|
+		| 									| read from the guiStep	(float2[])												|
+		| feedback_binormal					| The uniform of the fragment shader that contains the vertex position to		|
+		| 									| read from the guiStep	(float3[])												|
+		| feedback_tangent					| The uniform of the fragment shader that contains the vertex position to		|
+		| 									| read from the guiStep	(float3[])												|
+		| isworkingcolorspacesrgb			| Indicate if the value depend on the current Color Management library (bool)	|
+		|									|    - True is the current Color Management library is sRGB (Legacy)			|
+		|-----------------------------------|-------------------------------------------------------------------------------|
+
+Example:
+	<?xml version="1.0" encoding="UTF-8"?>
+	<glslfx version="1.0.0" author="Adobe">
+		<!-- BODY -->
+		<!-- ... -->
+		<!-- SCENE PARAMETERS -->
+	    <uniform name="ambientColor"            semantic="ambient"/>
+	    <uniform name="Lamp0Enabled"            semantic="light0enabled"/>
+	    <uniform name="Lamp0Pos"                semantic="light0position"/>
+	    <uniform name="Lamp0Color"              semantic="light0color"/>
+	    <uniform name="Lamp0Intensity"          semantic="light0intensity"/>
+	    <uniform name="Lamp1Enabled"            semantic="light1enabled"/>
+	    <uniform name="Lamp1Pos"                semantic="light1position"/>
+	    <uniform name="Lamp1Color"              semantic="light1color"/>
+	    <uniform name="Lamp1Intensity"          semantic="light1intensity"/>
+	</glslfx>
+
+3.4.3 Other parameters
+----------------------
+Other additional information can be add to each uniforms to:
+	- define the default value
+	- clamp values
+	- control the way the uniform will be display in the application:
+	- set the label
+	- set the widget info used to edit the value in the application:
+	- widget name, min, max, increment/decrement step
+	- group uniforms in group widgets
+
+As the Uniforms can be override for each techniques, it allows to display a specific gui setup for each techniques.
+
+XML Element Definition:
+	- Name: 'uniform'
+	- Attributes:
+		- 'name': The name of the uniform in the shader file.
+		- 'default': The uniform default value. (Separa multiple value with the ';' character, Ex: default="1.0;0.0;0.0;1.0")
+		- 'min': The min value of the validity range
+		- 'max': The max value of the validity range
+		- 'guiMin': The min value of the widget
+		- 'guiMax': The max value of the widget
+		NOTE: 'min', 'max', 'guiMin', 'guiMax' can use the same value type as the uniform or the same type of a single component of uniform type.
+			Ex: for a uniform of type float4, then 'min' can be "1.0" or "1.0;0.0;0.0;1.0"
+		- 'guiName': The name of the uniform in the GUI of the application
+		- 'guiGroup': The name of the group to put the uniform in the GUI of the application
+		- 'guiWidget': The name of the widget used to edit the uniform value in the GUI of application
+
+		|-----------------------|---------------------------------------------------|
+		| 'guiWidget' value		| Description										|
+		|-----------------------|---------------------------------------------------|
+		| color_lum_float		| Grayscale Color widget to control a float value 	|
+		| color_rgb_float		| RGB Color widget to control a float value			|
+		| color_rgba_float		| RGBA Color widget to control a float value		|
+		| slider_int			| Slider to control a int value						|
+		| slider_int2			| Slider to control a int2 value					|
+		| slider_int3			| Slider to control a int3 value					|
+		| slider_int4			| Slider to control a int4 value					|
+		| slider_float			| Slider to control a float value					|
+		| slider_float2			| Slider to control a float2 value					|
+		| slider_float3			| Slider to control a float3 value					|
+		| slider_float4			| Slider to control a float4 value					|
+		| slider_double			| Slider to control a double value					|
+		| slider_double2		| Slider to control a double2 value					|
+		| slider_double3		| Slider to control a double3 value					|
+		| slider_double4		| Slider to control a double4 value					|
+		| pushbuttons_bool		| Push Button to control a bool value				|
+		| pushbuttons_bool2		| Push Button to control a bool2 value				|
+		| pushbuttons_bool3		| Push Button to control a bool3 value				|
+		| pushbuttons_bool4		| Push Button to control a bool4 value				|
+		| texturename_editor	| Widget to control a texture name					|
+		| texturename_preview	| Widget to display the preview of a texture		|
+		| angle_float			| Angle widget to control a float value				|
+		|-----------------------|---------------------------------------------------|
+
