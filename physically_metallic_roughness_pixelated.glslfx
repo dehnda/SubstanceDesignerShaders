@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<glslfx version="1.0.0" author="Adobe" label="Metallic Roughness Pixelated">
+    <!-- TECHNIQUES -->
+    <technique name="Tessellation" label="Tesselation + Displacement">
+        <!-- PROPERTIES -->
+        <property name="blend_enabled"     value="true"/>
+        <property name="blend_func"        value="src_alpha,one_minus_src_alpha"/>
+        <property name="cull_face_enabled" value="true"/>
+        <property name="cull_face_mode"    value="back"/>
+
+        <!-- SHADERS -->
+        <shader type="vertex"       filename="common/tessellation/vs.glsl" primitiveType="patch3"/>
+        <shader type="tess_control" filename="common/tessellation/tcs.glsl"/>
+        <shader type="tess_eval"    filename="common/tessellation/tes.glsl"/>
+        <shader type="fragment"     filename="physically_metallic_roughness_pixelated/fs.glsl"/>
+
+        <!-- UNIFORMS -->
+        <uniform name="parallax_mode"       guiName="Parallax Mode" min="1" max="1" />
+        <uniform name="tessellationFactor"		guiGroup="Height"       guiName="Tessellation Factor"	default="1"   min="1" max="64" guiMin="1" guiMax="16" guiStep="1"   guiWidget="slider"/>
+        <uniform name="scalarZeroValue"			guiGroup="Height"       guiName="Scalar Zero Value"		default="0.5" min="0" max="1"  guiMin="0" guiMax="1"  guiStep="0.1" guiWidget="slider"/>
+
+        <!-- PHONG TESSELLATION UNIFORMS -->
+        <uniform name="usePhongTessellation"    guiGroup="Height"  guiName="Phong Tessellation"         default="false"      guiWidget="checkbox" />
+        <uniform name="phongTessellationFactor" guiGroup="Height"  guiName="Phong Tessellation Factor"  default="0.6" min="0.0" max="1.0" guiMin="0.0" guiMax="1.0" guiStep="0.05" guiWidget="slider"/>
+    </technique>
+
+    <technique name="Parallax Occlusion" label="Parallax Occlusion">
+        <!-- PROPERTIES -->
+        <property name="blend_enabled"     value="true"/>
+        <property name="blend_func"        value="src_alpha,one_minus_src_alpha"/>
+        <property name="cull_face_enabled" value="true"/>
+        <property name="cull_face_mode"    value="back"/>
+
+        <!-- SHADERS -->
+        <shader type="vertex"   filename="common/parallax/vs.glsl"/>
+        <shader type="fragment" filename="_physically_metallic_roughness/fs.glsl"/>
+
+        <!-- UNIFORMS -->
+        <uniform name="parallax_mode" guiName="Parallax Mode"         min="0" max="0" />
+    </technique>
+
+
+    <!-- INPUT VERTEX FORMAT -->
+    <vertexformat name="iVS_Position" semantic="position"/>
+    <vertexformat name="iVS_Normal"   semantic="normal"/>
+    <vertexformat name="iVS_UV"       semantic="texcoord0"/>
+    <vertexformat name="iVS_Tangent"  semantic="tangent0"/>
+    <vertexformat name="iVS_Binormal" semantic="binormal0"/>
+
+    <!-- TRANSFORM FEEDBACK VERTEX FORMAT -->
+    <feedbackformat name="iFS_Normal"   semantic="feedback_normal"/>
+    <feedbackformat name="iFS_UV"       semantic="feedback_texcoord"/>
+    <feedbackformat name="iFS_Tangent"  semantic="feedback_tangent"/>
+    <feedbackformat name="iFS_Binormal" semantic="feedback_binormal"/>
+    <feedbackformat name="iFS_PointWS"  semantic="feedback_position"/>
+
+    <!-- SAMPLERS -->
+    <sampler name="baseColorMap"       usage="baseColor"        guiGroup="Base Color"        guiWidget="color_rgb_float" texture_min_filter="nearest" texture_mag_filter="nearest" texture_wrap_s="repeat"/>
+    <sampler name="normalMap"          usage="normal"           guiGroup="Normal"            guiWidget="color_rgb_float" texture_min_filter="linear" texture_mag_filter="linear" texture_wrap_s="clamp_to_border"/>
+    <sampler name="roughnessMap"       usage="roughness"        guiGroup="Roughness"         guiWidget="color_lum_float" texture_min_filter="nearest" texture_mag_filter="nearest" texture_wrap_s="repeat"/>
+    <sampler name="metallicMap"        usage="metallic"         guiGroup="Metallic"          guiWidget="color_lum_float" texture_min_filter="nearest" texture_mag_filter="nearest" texture_wrap_s="repeat"/>
+    <sampler name="heightMap"          usage="height"           guiGroup="Height"            guiWidget="color_lum_float" texture_min_filter="nearest" texture_mag_filter="nearest" texture_wrap_s="repeat"/>
+    <sampler name="aoMap"              usage="ambientOcclusion" guiGroup="Ambient Occlusion" guiWidget="color_lum_float" texture_min_filter="nearest" texture_mag_filter="nearest" texture_wrap_s="repeat"/>
+    <sampler name="anisotropyLevelMap" usage="anisotropyLevel"  guiGroup="Anisotropy"        guiWidget="color_lum_float" texture_min_filter="nearest" texture_mag_filter="nearest" texture_wrap_s="repeat"/>
+    <sampler name="anisotropyAngleMap" usage="anisotropyAngle"  guiGroup="Anisotropy"        guiWidget="angle_float" texture_min_filter="nearest" texture_mag_filter="nearest" texture_wrap_s="repeat"/>
+    <sampler name="emissiveMap"        usage="emissive"         guiGroup="Emissive"          guiWidget="color_rgb_float" texture_min_filter="nearest" texture_mag_filter="nearest" texture_wrap_s="repeat"/>
+    <sampler name="specularLevel"      usage="specularLevel"    guiGroup="Specular"          guiWidget="color_lum_float"/>
+    <sampler name="opacityMap"         usage="opacity"          guiGroup="Opacity"           guiWidget="color_lum_float" texture_min_filter="nearest" texture_mag_filter="nearest" texture_wrap_s="repeat"/>
+    <sampler name="environmentMap"     usage="environment"      guiGroup="Environment"       guiWidget="color_rgb_float" ishidden="true" texture_min_filter="nearest" texture_mag_filter="nearest" texture_wrap_s="clamp_to_edge"/>
+    <sampler name="bluenoiseMask"      usage="bluenoisemask"    ishidden="true" texture_min_filter="nearest" texture_mag_filter="nearest" texture_wrap_s="clamp_to_edge"/>
+
+    <!-- MATRICES -->
+    <uniform name="worldMatrix"                 semantic="world"/>
+    <uniform name="worldViewProjMatrix"         semantic="worldviewprojection"/>
+    <uniform name="worldViewMatrix"             semantic="worldview"/>
+    <uniform name="worldInverseTransposeMatrix" semantic="worldinversetranspose"/>
+    <uniform name="viewInverseMatrix"           semantic="viewinverse"/>
+    <uniform name="modelViewMatrix"             semantic="modelview"/>
+    <uniform name="projectionMatrix"            semantic="projection"/>
+
+    <!-- SCENE PARAMETERS -->
+    <uniform name="Lamp0Enabled"   semantic="light0enabled"/>
+    <uniform name="Lamp0Pos"       semantic="light0position"/>
+    <uniform name="Lamp0Color"     semantic="light0color"/>
+    <uniform name="Lamp0Intensity" semantic="light0intensity"/>
+    <uniform name="Lamp1Enabled"   semantic="light1enabled"/>
+    <uniform name="Lamp1Pos"       semantic="light1position"/>
+    <uniform name="Lamp1Color"     semantic="light1color"/>
+    <uniform name="Lamp1Intensity" semantic="light1intensity"/>
+
+    <!-- MISC PARAMETERS -->
+    <uniform name="nbSamples"           semantic="samplespostablesize"/>
+    <uniform name="maxLod"              semantic="panoramamipmapheight"/>
+    <uniform name="AmbiIntensity"       semantic="panoramaintensity"/>
+    <uniform name="envRotation"         semantic="panoramarotation"/>
+    <uniform name="shCoefs"             semantic="irradianceshcoefs"/>
+    <uniform name="perFragBinormal"     semantic="computebinormalinfragmentshader"/>
+    <uniform name="uvwScale"            semantic="uvwscale"/>
+    <uniform name="displayUVTileOnly"   semantic="renderuvtile"/>
+    <uniform name="uvTileCoords"        semantic="uvtilecoords"/>
+
+    <!-- UNIFORMS -->
+    <uniform name="EmissiveIntensity" guiGroup="Emissive"   guiName="Emissive Intensity"      default="1" min="0"                         guiWidget="slider"   guiMin="0"  guiMax="20"/>
+    <uniform name="sRGBEmission"      guiGroup="Emissive"   guiName="sRGB Emission Texture"   default="{{sRGBWorkingColorSpace==true}}"   guiWidget="checkbox" semantic="isworkingcolorspacesrgb"/>
+    <uniform name="sRGBBaseColor"     guiGroup="Base Color" guiName="sRGB Base Color Texture" default="{{sRGBWorkingColorSpace==true}}"   guiWidget="checkbox" semantic="isworkingcolorspacesrgb"/>
+    <uniform name="heightMapScale"    guiGroup="Height"     guiName="Scale"                   default="1"                                 guiWidget="slider"   guiMin="0"  guiMax="10" usage="heightScale"/>
+    <uniform name="flipY"             guiGroup="Normal"     guiName="DirectX Normal"          default="true"                              guiWidget="checkbox" semantic="isdirectxnormal"/>
+    <uniform name="tiling"            guiGroup="Global"     guiName="Tiling"                  default="1" min="0.01"                      guiWidget="slider"   guiMax="10"/>
+    <uniform name="uvwScaleEnabled"   guiGroup="Global"     guiName="UV Scale Enabled"        default="false"                             guiWidget="checkbox" semantic="uvwscaleenabled"/>
+</glslfx>
